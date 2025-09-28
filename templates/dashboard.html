@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APT Detection System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 24px;
+            color: white;
+        }
+
+        .stat-icon.flows { background: linear-gradient(45deg, #3498db, #2980b9); }
+        .stat-icon.threats { background: linear-gradient(45deg, #e74c3c, #c0392b); }
+        .stat-icon.accuracy { background: linear-gradient(45deg, #27ae60, #2ecc71); }
+        .stat-icon.risk { background: linear-gradient(45deg, #f39c12, #e67e22); }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .stat-change {
+            font-size: 12px;
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .stat-change.positive {
+            background: #d5f4e6;
+            color: #27ae60;
+        }
+
+        .stat-change.negative {
+            background: #fdeaea;
+            color: #e74c3c;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .donut-chart {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            height: 220px;
+        }
+
+        .donut {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            position: relative;
+            transition: all 0.5s ease;
+        }
+
+        .donut::after {
+            content: '';
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .donut-labels {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .donut-labels .main {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #27ae60;
+        }
+
+        .donut-labels .sub {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .donut-legend {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 6px;
+        }
+
+        .legend-benign { background: #27ae60; }
+        .legend-malicious { background: #e74c3c; }
+        .legend-suspicious { background: #f39c12; }
+
+        .bar-chart {
+            height: 200px;
+            display: flex;
+            align-items: end;
+            justify-content: space-around;
+            padding: 20px 0;
+            position: relative;
+        }
+
+        .bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            max-width: 80px;
+        }
+
+        .bar {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            width: 40px;
+            border-radius: 4px 4px 0 0;
+            position: relative;
+            transition: all 0.5s ease;
+            min-height: 5px;
+        }
+
+        .bar:hover {
+            opacity: 0.8;
+            transform: scaleY(1.05);
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .bar-label {
+            margin-top: 10px;
+            font-size: 10px;
+            color: #7f8c8d;
+            text-align: center;
+            word-break: break-all;
+            line-height: 1.2;
+        }
+
+        .flows-table {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .table-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .export-btn {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead {
+            background: linear-gradient(45deg, #34495e, #2c3e50);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        th {
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        .new-row {
+            animation: highlightRow 3s ease-out;
+        }
+
+        @keyframes highlightRow {
+            0% { background-color: rgba(52, 152, 219, 0.3); }
+            100% { background-color: transparent; }
+        }
+
+        .risk-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .risk-low { background: #d5f4e6; color: #27ae60; }
+        .risk-medium { background: #fef5e7; color: #f39c12; }
+        .risk-high { background: #fdeaea; color: #e74c3c; }
+        .risk-minimal { background: #eaf4fd; color: #3498db; }
+        .risk-very-high { background: #2c1b1b; color: #ff4757; }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-benign { background: #27ae60; }
+        .status-malicious { background: #e74c3c; }
+        .status-suspicious { background: #f39c12; }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .connection-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .connected { background: #27ae60; }
+        .disconnected { background: #e74c3c; }
+        .connecting { background: #f39c12; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .flow-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .flow-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>APT Detection System</h1>
+            <p class="subtitle">Real-time threat monitoring and analysis</p>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="refreshData()">🔄 Refresh</button>
+                <button class="btn btn-success" id="monitoring-btn" onclick="toggleMonitoring()">⏸️ Stop Monitoring</button>
+                <div class="connection-status">
+                    <span class="connection-indicator connecting" id="connection-indicator"></span>
+                    <span id="connection-text">Connecting...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon flows">📊</div>
+                    <div>
+                        <div class="stat-value" id="total-flows">0</div>
+                        <div class="stat-label">Total Flows</div>
+                        <div class="stat-change positive" id="flows-change">Starting...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon threats">⚠️</div>
+                    <div>
+                        <div class="stat-value" id="malicious-flows">0</div>
+                        <div class="stat-label">Malicious Flows</div>
+                        <div class="stat-change negative" id="threats-change">Starting...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon accuracy">🎯</div>
+                    <div>
+                        <div class="stat-value" id="accuracy">0%</div>
+                        <div class="stat-label">Detection Accuracy</div>
+                        <div class="stat-change positive" id="accuracy-change">Model performance</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon risk">🛡️</div>
+                    <div>
+                        <div class="stat-value" id="risk-level">Low</div>
+                        <div class="stat-label">Risk Level</div>
+                        <div class="stat-change" id="risk-change">Network threat level</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3 class="chart-title">Traffic Distribution</h3>
+                <div class="donut-chart">
+                    <div class="donut" id="traffic-donut"></div>
+                    <div class="donut-labels">
+                        <div class="main" id="benign-percentage">0%</div>
+                        <div class="sub">Benign</div>
+                    </div>
+                </div>
+                <div class="donut-legend">
+                    <div class="legend-item">
+                        <div class="legend-color legend-benign"></div>
+                        <span>Benign (<span id="benign-count">0</span>)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-malicious"></div>
+                        <span>Malicious (<span id="malicious-count">0</span>)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-suspicious"></div>
+                        <span>Other (<span id="suspicious-count">0</span>)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">Top Source IPs by Flow Count</h3>
+                <div class="bar-chart" id="ip-bar-chart">
+                    <div class="bar-container">
+                        <div class="bar" style="height: 20px;">
+                            <div class="bar-value">0</div>
+                        </div>
+                        <div class="bar-label">No Data</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flows-table">
+            <div class="table-header">
+                <h3 class="table-title">Recent Network Flows</h3>
+                <button class="export-btn" onclick="exportData()">Export Data</button>
+            </div>
+            <div class="table-container">
+                <table id="flows-table">
+                    <thead>
+                        <tr>
+                            <th>Flow ID</th>
+                            <th>Source IP</th>
+                            <th>Destination IP</th>
+                            <th>Src Port</th>
+                            <th>Dst Port</th>
+                            <th>Protocol</th>
+                            <th>Classification</th>
+                            <th>Probability</th>
+                            <th>Risk</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flows-tbody">
+                        <tr>
+                            <td colspan="10" style="text-align: center; color: #7f8c8d; padding: 40px;">
+                                Waiting for network flows...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let socket;
+        let flowsData = [];
+        let isMonitoring = true;
+        let previousStats = { totalFlows: 0, maliciousFlows: 0 };
+        let ipCounts = {};
+        let trafficStats = { benign: 0, malicious: 0, other: 0 };
+
+        // Connect to Flask-SocketIO server
+        function connectToServer() {
+            try {
+                socket = io.connect('http://' + document.domain + ':' + location.port + '/test');
+                
+                socket.on('connect', function() {
+                    console.log('Connected to APT Detection Server');
+                    updateConnectionStatus('connected');
+                });
+
+                socket.on('disconnect', function() {
+                    console.log('Disconnected from server');
+                    updateConnectionStatus('disconnected');
+                });
+
+                socket.on('newresult', function(data) {
+                    console.log('Raw data from server:', data); // Log raw data
+                    if (isMonitoring) {
+                        processNewFlow(data);
+                    }
+                });
+
+            } catch (error) {
+                console.error('Failed to connect to server:', error);
+                updateConnectionStatus('disconnected');
+            }
+        }
+
+        // =================================================================
+        // CORRECTED FUNCTION - START
+        // =================================================================
+        function processNewFlow(data) {
+            try {
+                const result = data.result;
+                const ips = data.ips;
+
+                // This is the FULLY corrected mapping of the 'result' array from Python
+                const flowData = {
+                    flowId: result[0],
+                    srcIP: String(result[1]).replace(/<[^>]*>/g, ''),   // Convert to string and remove HTML
+                    srcPort: result[2],
+                    dstIP: String(result[3]).replace(/<[^>]*>/g, ''),   // Convert to string and remove HTML
+                    dstPort: result[4],
+                    protocol: result[5],
+                    // These fields were missing from the previous version
+                    startTime: result[6],
+                    lastSeen: result[7],
+                    processName: result[8],
+                    processId: result[9],
+                    // The remaining fields
+                    classification: result[10],
+                    probability: parseFloat(result[11]).toFixed(2),
+                    risk: result[12]
+                };
+
+                // Add to flows data
+                flowsData.unshift(flowData);
+
+                // Update traffic statistics
+                if (flowData.classification === 'Benign') {
+                    trafficStats.benign++;
+                } else if (['Botnet', 'DDoS', 'DoS', 'FTP-Patator', 'SSH-Patator', 'Web Attack'].includes(flowData.classification)) {
+                    trafficStats.malicious++;
+                } else {
+                    trafficStats.other++;
+                }
+
+                // Update IP counts from the provided data
+                if (ips && ips.length > 0) {
+                    ipCounts = {};
+                    ips.forEach(ip => {
+                        ipCounts[ip.SourceIP] = ip.count;
+                    });
+                }
+
+                // Call the functions to update the UI
+                addFlowToTable(flowData);
+                updateDashboard();
+
+                // Keep only the most recent 50 flows
+                if (flowsData.length > 50) {
+                    flowsData.pop(); // Use pop() to remove the oldest element
+                }
+
+            } catch (error) {
+                // This will show any errors in the F12 Developer Console
+                console.error('Error processing flow data:', error, data);
+            }
+        }
+        // =================================================================
+        // CORRECTED FUNCTION - END
+        // =================================================================
+
+        // Update connection status
+        function updateConnectionStatus(status) {
+            const indicator = document.getElementById('connection-indicator');
+            const text = document.getElementById('connection-text');
+            
+            indicator.className = `connection-indicator ${status}`;
+            
+            switch(status) {
+                case 'connected':
+                    text.textContent = 'Connected';
+                    break;
+                case 'disconnected':
+                    text.textContent = 'Disconnected';
+                    break;
+                case 'connecting':
+                    text.textContent = 'Connecting...';
+                    break;
+            }
+        }
+
+        // Update dashboard statistics
+        function updateDashboard() {
+            updateStatCards();
+            updateTrafficChart();
+            updateIPBarChart();
+        }
+
+        // Update statistics cards
+        function updateStatCards() {
+            // Your existing updateStatCards function
+            const totalFlows = flowsData.length;
+            const maliciousFlows = trafficStats.malicious; // Simplified for clarity
+            const accuracy = totalFlows > 0 ? ((trafficStats.benign / totalFlows) * 100).toFixed(1) : 0;
+
+            const riskPercentage = totalFlows > 0 ? (maliciousFlows / totalFlows) * 100 : 0;
+            let riskLevel = 'Low';
+            
+            if (riskPercentage > 30) {
+                riskLevel = 'Critical';
+            } else if (riskPercentage > 20) {
+                riskLevel = 'High';
+            } else if (riskPercentage > 10) {
+                riskLevel = 'Medium';
+            }
+
+            animateValue('total-flows', totalFlows);
+            animateValue('malicious-flows', maliciousFlows);
+            document.getElementById('accuracy').textContent = accuracy + '%';
+            document.getElementById('risk-level').textContent = riskLevel;
+        }
+
+        // Animate number changes
+        function animateValue(elementId, newValue) {
+            const element = document.getElementById(elementId);
+            const currentValue = parseInt(element.textContent) || 0;
+            
+            if (currentValue !== newValue) {
+                element.style.transform = 'scale(1.1)';
+                element.textContent = newValue;
+                setTimeout(() => {
+                    element.style.transform = 'scale(1)';
+                }, 300);
+            }
+        }
+
+        // Update traffic distribution chart
+        function updateTrafficChart() {
+            // Your existing updateTrafficChart function
+            const total = trafficStats.benign + trafficStats.malicious + trafficStats.other;
+            if (total === 0) return;
+            const benignPercent = (trafficStats.benign / total) * 100;
+            const donut = document.getElementById('traffic-donut');
+            const benignDeg = (benignPercent / 100) * 360;
+            const maliciousDeg = ((trafficStats.malicious / total) * 100 / 100) * 360;
+            donut.style.background = `conic-gradient(#27ae60 0deg ${benignDeg}deg, #e74c3c ${benignDeg}deg ${benignDeg + maliciousDeg}deg, #f39c12 ${benignDeg + maliciousDeg}deg 360deg)`;
+            document.getElementById('benign-percentage').textContent = benignPercent.toFixed(1) + '%';
+            document.getElementById('benign-count').textContent = trafficStats.benign;
+            document.getElementById('malicious-count').textContent = trafficStats.malicious;
+            document.getElementById('suspicious-count').textContent = trafficStats.other;
+        }
+
+        // Update IP bar chart
+        function updateIPBarChart() {
+            // Your existing updateIPBarChart function
+            const chartContainer = document.getElementById('ip-bar-chart');
+            const sortedIPs = Object.entries(ipCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+            if (sortedIPs.length === 0) return;
+            const maxCount = sortedIPs[0][1];
+            chartContainer.innerHTML = '';
+            sortedIPs.forEach(([ip, count]) => {
+                const barContainer = document.createElement('div');
+                barContainer.className = 'bar-container';
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = `${(count / maxCount) * 160}px`;
+                const barValue = document.createElement('div');
+                barValue.className = 'bar-value';
+                barValue.textContent = count;
+                const barLabel = document.createElement('div');
+                barLabel.className = 'bar-label';
+                barLabel.textContent = ip;
+                bar.appendChild(barValue);
+                barContainer.appendChild(bar);
+                barContainer.appendChild(barLabel);
+                chartContainer.appendChild(barContainer);
+            });
+        }
+
+        // Add flow to table
+        function addFlowToTable(flow) {
+            const tbody = document.getElementById('flows-tbody');
+            
+            if (tbody.children.length === 1 && tbody.children[0].cells.length === 1) {
+                tbody.innerHTML = '';
+            }
+            
+            const newRow = document.createElement('tr');
+            newRow.className = 'new-row';
+            
+            let riskClass = 'risk-minimal';
+            if (String(flow.risk).includes('Very High')) riskClass = 'risk-very-high';
+            else if (String(flow.risk).includes('High')) riskClass = 'risk-high';
+            else if (String(flow.risk).includes('Medium')) riskClass = 'risk-medium';
+            else if (String(flow.risk).includes('Low')) riskClass = 'risk-low';
+
+            newRow.innerHTML = `
+                <td>${flow.flowId}</td>
+                <td>${flow.srcIP}</td>
+                <td>${flow.dstIP}</td>
+                <td>${flow.srcPort}</td>
+                <td>${flow.dstPort}</td>
+                <td>${flow.protocol}</td>
+                <td>${flow.classification}</td>
+                <td>${flow.probability}</td>
+                <td><span class="risk-badge ${riskClass}">${String(flow.risk).replace(/<[^>]*>/g, '')}</span></td>
+                <td><a href="/flow-detail?flow_id=${flow.flowId}" target="_blank" class="flow-link">Details</a></td>
+            `;
+            tbody.prepend(newRow);
+        }
+
+        function toggleMonitoring() {
+            isMonitoring = !isMonitoring;
+            const btn = document.getElementById('monitoring-btn');
+            if (isMonitoring) {
+                btn.innerHTML = '⏸️ Stop Monitoring';
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-success');
+            } else {
+                btn.innerHTML = '▶️ Start Monitoring';
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-danger');
+            }
+        }
+        
+        function refreshData() {
+             // You can add logic here to request a full data refresh from the server if needed
+             console.log("Refresh requested.");
+        }
+
+        function exportData() {
+            // You can add logic here to export the current `flowsData` array to CSV
+            console.log("Export requested.");
+        }
+        
+        // Initialize the application
+        function initApp() {
+            console.log('APT Detection Dashboard initialized');
+            connectToServer();
+        }
+
+        // =================================================================
+        // ADD THIS LINE AT THE END TO START THE SCRIPT
+        // =================================================================
+        initApp();
+
+    </script>
+</body>
+</html>
