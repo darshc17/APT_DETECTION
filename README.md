@@ -39,5 +39,6 @@ Web app address: [http://localhost:5000](http://localhost:5000)
 ## Demo GUI
 * Main page, overview of real-time captured flows:
 
+![Demo GUI](Mainui.jpeg)
 
 
